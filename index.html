@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width,
+                   initial-scale=1.0,
+                   maximum-scale=1.0,
+                   user-scalable=no">
+
+    <title>Our Wedding ❤️</title>
+
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+
+    <!-- MindAR -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .ar-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        #startButton {
+            position: fixed;
+            z-index: 9999;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+
+            padding: 16px 28px;
+            font-size: 18px;
+
+            border: none;
+            border-radius: 30px;
+
+            background: #ffffff;
+            color: #000000;
+        }
+    </style>
+</head>
+
+<body>
+
+<button id="startButton">
+    ❤️ Start Wedding AR
+</button>
+
+<div class="ar-container">
+
+<a-scene
+    mindar-image="
+        imageTargetSrc: ./targets.mind;
+        autoStart: false;
+        uiLoading: no;
+        uiScanning: no;
+        uiError: no;
+    "
+
+    color-space="sRGB"
+
+    renderer="
+        colorManagement: true;
+        physicallyCorrectLights;
+    "
+
+    vr-mode-ui="enabled: false"
+
+    device-orientation-permission-ui="enabled: false">
+
+    <a-assets>
+
+        <video
+            id="weddingVideo"
+            src="./wedding-video.mp4"
+            preload="auto"
+            loop
+            playsinline
+            webkit-playsinline>
+        </video>
+
+    </a-assets>
+
+    <a-camera
+        position="0 0 0"
+        look-controls="enabled: false">
+    </a-camera>
+
+    <!-- Image Target -->
+    <a-entity
+        mindar-image-target="targetIndex: 0">
+
+        <a-video
+            id="arVideo"
+            src="#weddingVideo"
+            position="0 0 0"
+            width="1"
+            height="0.5625"
+            rotation="0 0 0">
+        </a-video>
+
+    </a-entity>
+
+</a-scene>
+
+</div>
+
+<script>
+
+const startButton =
+    document.getElementById("startButton");
+
+const scene =
+    document.querySelector("a-scene");
+
+const video =
+    document.getElementById("weddingVideo");
+
+const arVideo =
+    document.getElementById("arVideo");
+
+startButton.addEventListener("click", async () => {
+
+    startButton.style.display = "none";
+
+    try {
+
+        await video.play();
+
+    } catch (error) {
+
+        console.log("Video waiting for target");
+
+    }
+
+    const mindarSystem =
+        scene.systems["mindar-image-system"];
+
+    mindarSystem.start();
+
+});
+
+scene.addEventListener(
+    "targetFound",
+    () => {
+
+        video.currentTime = 0;
+
+        video.play();
+
+    }
+);
+
+scene.addEventListener(
+    "targetLost",
+    () => {
+
+        video.pause();
+
+    }
+);
+
+</script>
+
+</body>
+</html>
