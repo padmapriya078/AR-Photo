@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
 
@@ -9,55 +9,147 @@
                    maximum-scale=1.0,
                    user-scalable=no">
 
-    <title>Our Wedding ❤️</title>
+    <title>Wedding AR ❤️</title>
 
     <!-- A-Frame -->
-    <script src="https://aframe.io/releases/1.4.1/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
     <!-- MindAR -->
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        html, body {
+        html,
+        body {
             margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background: black;
+            font-family: Arial, sans-serif;
         }
 
-        .ar-container {
-            width: 100%;
-            height: 100%;
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            background: #111;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            box-sizing: border-box;
+        }
+
+        #startScreen h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        #startScreen p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 25px;
         }
 
         #startButton {
+            border: none;
+            border-radius: 30px;
+            padding: 16px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background: white;
+            color: black;
+        }
+
+        #message {
             position: fixed;
             z-index: 9999;
             left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+            bottom: 25px;
+            transform: translateX(-50%);
 
-            padding: 16px 28px;
-            font-size: 18px;
+            width: calc(100% - 40px);
+            max-width: 450px;
+
+            padding: 14px;
+            box-sizing: border-box;
+
+            border-radius: 15px;
+
+            background: rgba(0,0,0,0.65);
+            color: white;
+
+            text-align: center;
+            font-size: 15px;
+
+            display: none;
+        }
+
+        #soundButton {
+            position: fixed;
+            z-index: 10001;
+
+            right: 20px;
+            bottom: 20px;
+
+            width: 52px;
+            height: 52px;
 
             border: none;
-            border-radius: 30px;
+            border-radius: 50%;
 
-            background: #ffffff;
-            color: #000000;
+            font-size: 22px;
+
+            background: white;
+            color: black;
+
+            display: none;
         }
     </style>
 </head>
 
 <body>
 
-<button id="startButton">
-    ❤️ Start Wedding AR
+<!-- START SCREEN -->
+<div id="startScreen">
+
+    <h1>❤️ Wedding AR</h1>
+
+    <p>
+        Tap the button below to start the camera.<br><br>
+        Then point your camera at the<br>
+        <b>printed wedding photo</b>.
+    </p>
+
+    <button id="startButton">
+        📷 Start Camera
+    </button>
+
+</div>
+
+
+<!-- STATUS MESSAGE -->
+<div id="message">
+    Point your camera at the wedding photo.
+</div>
+
+
+<!-- SOUND BUTTON -->
+<button id="soundButton">
+    🔇
 </button>
 
-<div class="ar-container">
 
+<!-- AR SCENE -->
 <a-scene
+    id="arScene"
+
     mindar-image="
         imageTargetSrc: ./targets.mind;
         autoStart: false;
@@ -75,99 +167,338 @@
 
     vr-mode-ui="enabled: false"
 
-    device-orientation-permission-ui="enabled: false">
+    device-orientation-permission-ui="enabled: false"
 
+    embedded>
+
+    <!-- ASSETS -->
     <a-assets>
 
         <video
             id="weddingVideo"
+
             src="./wedding-video.mp4"
+
             preload="auto"
+
             loop
+
             playsinline
-            webkit-playsinline>
+
+            webkit-playsinline
+
+            crossorigin="anonymous">
         </video>
 
     </a-assets>
 
+
+    <!-- CAMERA -->
     <a-camera
         position="0 0 0"
         look-controls="enabled: false">
     </a-camera>
 
-    <!-- Image Target -->
+
+    <!-- IMAGE TARGET -->
+
+    <!--
+        targetIndex: 0 means the first image
+        inside targets.mind
+    -->
+
     <a-entity
+        id="target"
         mindar-image-target="targetIndex: 0">
 
+        <!-- VIDEO -->
+
         <a-video
-            id="arVideo"
+            id="videoPlane"
+
             src="#weddingVideo"
+
             position="0 0 0"
+
             width="1"
+
             height="0.5625"
+
             rotation="0 0 0">
+
         </a-video>
 
     </a-entity>
 
 </a-scene>
 
-</div>
 
 <script>
 
-const startButton =
-    document.getElementById("startButton");
+    const startScreen =
+        document.getElementById("startScreen");
 
-const scene =
-    document.querySelector("a-scene");
+    const startButton =
+        document.getElementById("startButton");
 
-const video =
-    document.getElementById("weddingVideo");
+    const message =
+        document.getElementById("message");
 
-const arVideo =
-    document.getElementById("arVideo");
+    const soundButton =
+        document.getElementById("soundButton");
 
-startButton.addEventListener("click", async () => {
+    const scene =
+        document.getElementById("arScene");
 
-    startButton.style.display = "none";
+    const target =
+        document.getElementById("target");
 
-    try {
+    const video =
+        document.getElementById("weddingVideo");
 
-        await video.play();
 
-    } catch (error) {
+    /*
+     * START CAMERA
+     */
 
-        console.log("Video waiting for target");
+    startButton.addEventListener("click", async function () {
 
-    }
+        startButton.disabled = true;
 
-    const mindarSystem =
-        scene.systems["mindar-image-system"];
+        startButton.innerText =
+            "Starting camera...";
 
-    mindarSystem.start();
 
-});
+        try {
 
-scene.addEventListener(
-    "targetFound",
-    () => {
+            /*
+             * Request camera permission explicitly.
+             */
 
-        video.currentTime = 0;
+            const stream =
+                await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: {
+                            ideal: "environment"
+                        }
+                    },
+                    audio: false
+                });
 
-        video.play();
 
-    }
-);
+            /*
+             * We only requested permission.
+             *
+             * MindAR will create/use its own
+             * camera stream.
+             */
 
-scene.addEventListener(
-    "targetLost",
-    () => {
+            stream.getTracks().forEach(
+                track => track.stop()
+            );
 
-        video.pause();
 
-    }
-);
+            /*
+             * Hide start screen.
+             */
+
+            startScreen.style.display = "none";
+
+
+            /*
+             * Show instruction.
+             */
+
+            message.style.display = "block";
+
+            message.innerText =
+                "📷 Point your camera at the wedding photo";
+
+
+            /*
+             * Start MindAR.
+             */
+
+            const mindarSystem =
+                scene.systems["mindar-image-system"];
+
+
+            await mindarSystem.start();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            startButton.disabled = false;
+
+            startButton.innerText =
+                "📷 Start Camera";
+
+
+            message.style.display = "block";
+
+
+            if (error.name === "NotAllowedError") {
+
+                message.innerText =
+                    "❌ Camera permission was denied. " +
+                    "Please allow camera access in your browser settings.";
+
+            } else {
+
+                message.innerText =
+                    "❌ Could not start camera: " +
+                    error.message;
+            }
+
+        }
+
+    });
+
+
+    /*
+     * IMAGE FOUND
+     */
+
+    target.addEventListener(
+        "targetFound",
+        async function () {
+
+            console.log("Wedding photo detected!");
+
+            message.style.display = "block";
+
+            message.innerText =
+                "❤️ Wedding photo detected!";
+
+
+            /*
+             * Start video from beginning.
+             */
+
+            video.currentTime = 0;
+
+
+            try {
+
+                await video.play();
+
+                soundButton.style.display =
+                    "block";
+
+                soundButton.innerText =
+                    "🔇";
+
+            } catch (error) {
+
+                console.log(
+                    "Autoplay blocked:",
+                    error
+                );
+
+                message.innerText =
+                    "❤️ Photo detected! Tap the screen to play the video.";
+
+            }
+
+        }
+    );
+
+
+    /*
+     * IMAGE LOST
+     */
+
+    target.addEventListener(
+        "targetLost",
+        function () {
+
+            console.log("Wedding photo lost");
+
+            video.pause();
+
+            soundButton.style.display =
+                "none";
+
+            message.innerText =
+                "📷 Point your camera at the wedding photo.";
+
+        }
+    );
+
+
+    /*
+     * SOUND ON/OFF
+     */
+
+    soundButton.addEventListener(
+        "click",
+        async function () {
+
+            if (video.muted) {
+
+                video.muted = false;
+
+                soundButton.innerText =
+                    "🔊";
+
+            } else {
+
+                video.muted = true;
+
+                soundButton.innerText =
+                    "🔇";
+            }
+
+
+            try {
+
+                await video.play();
+
+            } catch (error) {
+
+                console.log(error);
+
+            }
+
+        }
+    );
+
+
+    /*
+     * FALLBACK:
+     * If autoplay is blocked, tapping anywhere
+     * on the screen attempts to play the video.
+     */
+
+    document.addEventListener(
+        "click",
+        async function () {
+
+            if (
+                video.paused &&
+                video.readyState >= 2
+            ) {
+
+                try {
+
+                    await video.play();
+
+                } catch (error) {
+
+                    console.log(
+                        "Video still blocked:",
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+    );
 
 </script>
 
